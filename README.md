@@ -1,7 +1,5 @@
 # 🧠 NLP Repository
 
-:contentReference[oaicite:0]{index=0}
-
 ## 📌 Overview
 This repository documents my Natural Language Processing (NLP) learning journey along with hands-on coding practice and real-world projects. It includes notes, Jupyter notebooks, and future NLP-based projects.
 
