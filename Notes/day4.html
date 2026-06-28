@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Study Notes: Word Embeddings, Word2Vec, CBOW & Skip-gram</title>
+    <style>
+        :root {
+            --bg-light: #f8f9fa;
+            --card-bg: #ffffff;
+            --primary-blue: #0056b3;
+            --secondary-blue: #004494;
+            --orange-highlight: #d35400;
+            --green-badge: #27ae60;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e9ecef;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --border-radius: 12px;
+            --shadow: 0 6px 12px rgba(0,0,0,0.08);
+            --shadow-hover: 0 12px 24px rgba(0,0,0,0.12);
+        }
+
+        body {
+            background-color: var(--bg-light);
+            font-family: var(--font-family);
+            color: var(--text-main);
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 { margin-top: 0; }
+        h2 { color: var(--primary-blue); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 30px; }
+        h3 { color: var(--orange-highlight); margin-top: 25px; }
+        p { margin-bottom: 15px; font-size: 1.05rem; }
+        ul, ol { margin-bottom: 15px; font-size: 1.05rem; }
+        li { margin-bottom: 8px; }
+
+        /* Header Styling */
+        .main-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .main-header h1 { font-size: 2.5em; margin-bottom: 15px; }
+        .main-header p { font-size: 1.1em; opacity: 0.9; margin: 5px 0; }
+        .meta-badges {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .meta-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Layout Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Interactive Elements */
+        .timestamp {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 700;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-green { background: var(--green-badge); color: white; }
+        .badge-blue { background: var(--primary-blue); color: white; }
+        .badge-orange { background: var(--orange-highlight); color: white; }
+
+        /* Table of Contents */
+        .toc {
+            background: #f8fbff;
+            border: 1px solid #cce3ff;
+            padding: 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 40px;
+        }
+        .toc-title { font-size: 1.4em; font-weight: bold; color: var(--primary-blue); margin-bottom: 15px; }
+        .toc ul { list-style: none; padding-left: 0; margin: 0; }
+        .toc li { margin-bottom: 12px; border-bottom: 1px dashed #cce3ff; padding-bottom: 8px; }
+        .toc li:last-child { border-bottom: none; }
+        .toc a { text-decoration: none; color: var(--text-main); font-weight: 600; transition: color 0.2s; display: flex; align-items: center; }
+        .toc a:before { content: "▸"; color: var(--primary-blue); margin-right: 10px; font-size: 1.2em; }
+        .toc a:hover { color: var(--orange-highlight); }
+
+        /* Custom Content Boxes */
+        .box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            position: relative;
+        }
+        .box-title { font-weight: 700; margin-bottom: 10px; display: block; font-size: 1.15em; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .box-info { background: #e7f1ff; border-left: 6px solid var(--primary-blue); color: #004085; }
+        .box-definition { background: #e0f7fa; border-left: 6px solid #00acc1; color: #006064; }
+        .box-example { background: #fdf3ea; border-left: 6px solid var(--orange-highlight); color: #8a3700; }
+        .box-warning { background: #fff3cd; border-left: 6px solid #ffc107; color: #856404; }
+        .box-interview { background: #f3e5f5; border-left: 6px solid #8e24aa; color: #4a148c; }
+        .box-best-practice { background: #d4edda; border-left: 6px solid var(--green-badge); color: #155724; }
+        .box-memory { background: #fff0f5; border-left: 6px solid #e91e63; color: #880e4f; }
+
+        /* Tables */
+        .table-responsive { overflow-x: auto; margin: 25px 0; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        th, td { padding: 15px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { background-color: var(--primary-blue); color: white; font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #f8fbff; }
+
+        /* Code Blocks */
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin: 25px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .code-kw { color: #569cd6; font-weight: bold; } /* Keyword */
+        .code-str { color: #ce9178; } /* String */
+        .code-fn { color: #dcdcaa; } /* Function */
+        .code-cmt { color: #6a9955; font-style: italic; } /* Comment */
+        .code-num { color: #b5cea8; } /* Number */
+
+        /* CSS Diagrams */
+        .diagram-wrapper {
+            background: #f8fbff;
+            border: 2px dashed #cce3ff;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .diagram-title { font-weight: 600; color: var(--primary-blue); margin-bottom: 20px; text-align: center; }
+        .diagram-row { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; width: 100%; }
+        .diagram-col { display: flex; flex-direction: column; gap: 10px; }
+        .diagram-node {
+            background: white;
+            border: 2px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            min-width: 140px;
+            font-size: 0.95em;
+        }
+        .diagram-node.highlight { border-color: var(--orange-highlight); background: #fff5eb; color: var(--orange-highlight); }
+        .diagram-node.success { border-color: var(--green-badge); background: #f0fdf4; color: #166534; }
+        .diagram-arrow { color: var(--primary-blue); font-size: 2em; font-weight: bold; }
+        
+        .math-expr {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            font-size: 1.2em;
+            background: #f1f3f5;
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <header class="main-header">
+        <h1>Word Embeddings, CBOW & Skip-gram (Word2Vec)</h1>
+        <p>Natural Language Processing Architecture & Implementation</p>
+        <div class="meta-badges">
+            <span class="meta-badge">Course: Natural Language Processing</span>
+            <span class="meta-badge">Instructor: Krish Naik</span>
+            <span class="meta-badge">Day 4</span>
+            <span class="meta-badge">Duration: 1h 27m</span>
+        </div>
+    </header>
+
+    <div class="toc">
+        <div class="toc-title">Table of Contents</div>
+        <ul>
+            <li><a href="#intro">1. Introduction & Recap of Previous Techniques</a></li>
+            <li><a href="#problems">2. The Limitations of Frequency-Based Methods</a></li>
+            <li><a href="#embeddings">3. What are Word Embeddings?</a></li>
+            <li><a href="#features">4. Feature Representation & Semantic Meaning</a></li>
+            <li><a href="#cosine">5. Cosine Similarity & Vector Mathematics</a></li>
+            <li><a href="#word2vec">6. Introduction to Word2Vec Architecture</a></li>
+            <li><a href="#cbow">7. Continuous Bag of Words (CBOW)</a></li>
+            <li><a href="#skipgram">8. Skip-Gram Architecture</a></li>
+            <li><a href="#gensim">9. Practical Implementation using Python & Gensim</a></li>
+            <li><a href="#interview">10. Interview Preparation & FAQ</a></li>
+            <li><a href="#cheatsheet">11. Final Cheat Sheet & Summary</a></li>
+        </ul>
+    </div>
+
+    <main>
+        <div class="card" id="intro">
+            <h2><span class="timestamp">[00:00:09]</span> 1. Introduction & Recap of Previous Techniques</h2>
+            <p>Welcome to Day 4 of the comprehensive Natural Language Processing (NLP) curriculum. To appreciate the necessity of advanced Deep Learning embeddings, we must first review the classical statistical techniques covered previously.</p>
+            
+            <div class="box box-info">
+                <span class="box-title">Classical Text Representation Techniques</span>
+                <ul>
+                    <li><strong>Bag of Words (BoW):</strong> Represents text by counting the frequency of words in a document.</li>
+                    <li><strong>TF-IDF (Term Frequency - Inverse Document Frequency):</strong> Weighs the frequency of a word by how rare it is across the entire corpus, prioritizing unique keywords.</li>
+                    <li><strong>One-Hot Encoding:</strong> Represents a word as a binary vector where only the index corresponding to the word is <code>1</code>, and all other elements are <code>0</code>.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card" id="problems">
+            <h2><span class="timestamp">[00:11:47]</span> 2. The Limitations of Frequency-Based Methods</h2>
+            <p>While classical methods like TF-IDF and BoW serve as excellent baselines, they suffer from critical architectural flaws when applied to large-scale, complex NLP tasks.</p>
+            
+            <div class="box box-warning">
+                <span class="box-title">Why we need to move beyond BoW and TF-IDF</span>
+                <ol>
+                    <li><strong>Inability to Capture Semantic Meaning:</strong> Words like <em>"good"</em> and <em>"honest"</em>, or <em>"good"</em> and <em>"better"</em> are semantically related. However, BoW/TF-IDF treats them as completely distinct mathematical entities with zero relationship.</li>
+                    <li><strong>The Curse of Dimensionality (Sparse Matrices):</strong> If you have a vocabulary of 50,000 words, a single one-hot encoded vector will have 49,999 zeros and a single one. This massive sparsity leads to inefficient memory usage and severe model overfitting.</li>
+                    <li><strong>No Contextual Awareness:</strong> Order of words is completely discarded (hence the term "bag" of words).</li>
+                </ol>
+            </div>
+            
+            <div class="box box-memory">
+                <span class="box-title">Analogy</span>
+                <p>Using One-Hot Encoding is like organizing a library where every single book gets its own completely separate building. It takes up infinite space (high dimensionality) and books on the same subject (semantics) are miles apart.</p>
+            </div>
+        </div>
+
+        <div class="card" id="embeddings">
+            <h2><span class="timestamp">[00:12:46]</span> 3. What are Word Embeddings?</h2>
+            
+            <div class="box box-definition">
+                <span class="box-title">Definition</span>
+                <p><strong>Word Embedding</strong> is a technique in NLP where individual words are represented as dense, continuous-valued vectors in a predefined vector space. Unlike sparse vectors, embeddings capture the contextual, semantic, and syntactic relationships between words.</p>
+            </div>
+
+            <p>The core objective of Word Embeddings is to solve the issues of sparsity and semantic ignorance. Word embedding techniques are broadly classified into two categories:</p>
+
+            <div class="diagram-wrapper">
+                <div class="diagram-title">Taxonomy of Text Vectorization</div>
+                <div class="diagram-row" style="align-items: flex-start;">
+                    <div class="diagram-col">
+                        <div class="diagram-node" style="background: var(--primary-blue); color: white;">Count / Frequency Based</div>
+                        <div class="diagram-arrow" style="text-align: center; font-size: 1.2em;">↓</div>
+                        <div class="diagram-node">Bag of Words (BoW)</div>
+                        <div class="diagram-node">TF-IDF</div>
+                        <div class="diagram-node">One-Hot Encoding</div>
+                    </div>
+                    <div style="width: 50px;"></div>
+                    <div class="diagram-col">
+                        <div class="diagram-node highlight" style="background: var(--orange-highlight); color: white;">Deep Learning Pre-trained Models</div>
+                        <div class="diagram-arrow" style="text-align: center; font-size: 1.2em; color: var(--orange-highlight)">↓</div>
+                        <div class="diagram-node highlight">Word2Vec (CBOW & Skip-gram)</div>
+                        <div class="diagram-node highlight">GloVe</div>
+                        <div class="diagram-node highlight">FastText</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box box-best-practice">
+                <span class="box-title">Key Advantages of Embeddings</span>
+                <ul>
+                    <li><strong>Fixed, Limited Dimensions:</strong> Instead of vocabulary-sized dimensions (e.g., 50,000), embeddings compress representations into fixed dimensions (e.g., 100, 200, or 300).</li>
+                    <li><strong>Dense Vectors (Reduced Sparsity):</strong> Vectors are filled with float values (e.g., <code>[0.12, -0.45, 0.89...]</code>) rather than zeroes.</li>
+                    <li><strong>Semantic Clustering:</strong> Words with similar meanings will have vectors placed very close to each other in the multi-dimensional space.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card" id="features">
+            <h2><span class="timestamp">[00:16:03]</span> 4. Feature Representation & Semantic Meaning</h2>
+            <p>To understand how a neural network represents a word, imagine mapping every word across abstract "features." In a real model (like Google's Word2Vec), there are typically 300 dimensions. For human intuition, let's pretend these dimensions map to distinct human concepts.</p>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Vocabulary Word</th>
+                            <th>Feature 1: Gender</th>
+                            <th>Feature 2: Royal</th>
+                            <th>Feature 3: Age</th>
+                            <th>Feature 4: Food</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Boy</strong></td>
+                            <td>-1.00</td>
+                            <td>0.01</td>
+                            <td>-0.50</td>
+                            <td>0.02</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Girl</strong></td>
+                            <td>+1.00</td>
+                            <td>0.02</td>
+                            <td>-0.50</td>
+                            <td>0.01</td>
+                        </tr>
+                        <tr>
+                            <td><strong>King</strong></td>
+                            <td>-0.95</td>
+                            <td>+0.96</td>
+                            <td>+0.70</td>
+                            <td>-0.05</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Queen</strong></td>
+                            <td>+0.95</td>
+                            <td>+0.96</td>
+                            <td>+0.70</td>
+                            <td>-0.05</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Apple</strong></td>
+                            <td>0.00</td>
+                            <td>-0.01</td>
+                            <td>+0.95</td>
+                            <td>+0.99</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="box box-example">
+                <span class="box-title">Observation</span>
+                <p>Notice how the vectors for <strong>King</strong> and <strong>Queen</strong> are almost identical across the <em>Royal</em> and <em>Age</em> dimensions, but perfectly opposite on the <em>Gender</em> dimension. This numerical mapping allows mathematical operations on language!</p>
+                <p>Famous NLP Equation: <span class="math-expr">King - Man + Woman ≈ Queen</span></p>
+                <p>By subtracting the "male" concept from "king" and adding the "female" concept, the resulting vector point is mathematically closest to the vector representing "queen".</p>
+            </div>
+        </div>
+
+        <div class="card" id="cosine">
+            <h2><span class="timestamp">[00:23:12]</span> 5. Cosine Similarity & Vector Mathematics</h2>
+            <p>Once words are converted into dense vectors, how do we ask the computer: <em>"How similar are these two words?"</em> We use a mathematical concept called <strong>Cosine Similarity</strong>.</p>
+
+            <div class="box box-definition">
+                <span class="box-title">Cosine Similarity Definition</span>
+                <p>It measures the cosine of the angle (θ) between two multi-dimensional vectors projected in a space. It determines whether two vectors are pointing in roughly the same direction.</p>
+                <ul>
+                    <li>If Angle = <strong>0°</strong> → Cos(0) = <strong>1.0</strong> → Vectors are identical / synonyms.</li>
+                    <li>If Angle = <strong>90°</strong> → Cos(90) = <strong>0.0</strong> → Vectors are completely unrelated (orthogonal).</li>
+                    <li>If Angle = <strong>180°</strong> → Cos(180) = <strong>-1.0</strong> → Vectors are perfectly opposite / antonyms.</li>
+                </ul>
+            </div>
+
+            <div class="box box-info">
+                <span class="box-title">Cosine Distance</span>
+                <p>Distance is the inverse concept of similarity. To calculate distance mathematically in ML algorithms:</p>
+                <p><span class="math-expr">Cosine Distance = 1 - Cosine Similarity</span></p>
+                <p>If similarity is 1 (identical), distance is 0.</p>
+            </div>
+        </div>
+
+        <div class="card" id="word2vec">
+            <h2><span class="timestamp">[00:27:50]</span> 6. Introduction to Word2Vec Architecture</h2>
+            <p><strong>Word2Vec</strong> is a predictive deep learning model created by Google. Instead of counting words (like TF-IDF), it trains a shallow Neural Network to predict words. By doing so, it inherently learns the relationships between words. Word2Vec has two distinct algorithmic architectures:</p>
+            
+            <ol>
+                <li><strong>CBOW (Continuous Bag of Words):</strong> Predicts a missing target word given the surrounding context words.</li>
+                <li><strong>Skip-gram:</strong> Predicts surrounding context words given a single target word.</li>
+            </ol>
+        </div>
+
+        <div class="card" id="cbow">
+            <h2><span class="timestamp">[00:28:00]</span> 7. Continuous Bag of Words (CBOW)</h2>
+            <p>Let's dissect exactly how a network learns these weights from scratch using CBOW.</p>
+            
+            <h3>Step 1: Define the Dataset and Window Size</h3>
+            <p>Consider the corpus: <em>"Krish channel is related to data science"</em>.</p>
+            <p>We define a hyperparameter called <strong>Window Size</strong>. Let's set <code>Window Size = 5</code> (always prefer odd numbers so there is an equal left and right context around the center word).</p>
+
+            <h3>Step 2: Generate Training Data (Sliding Window)</h3>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sliding Window Sequence (5 words)</th>
+                            <th>Input Data (Context Words)</th>
+                            <th>Output Label (Target Word)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>[Krish, channel, <strong>is</strong>, related, to]</td>
+                            <td>[Krish, channel, related, to]</td>
+                            <td>is</td>
+                        </tr>
+                        <tr>
+                            <td>[channel, is, <strong>related</strong>, to, data]</td>
+                            <td>[channel, is, to, data]</td>
+                            <td>related</td>
+                        </tr>
+                        <tr>
+                            <td>[is, related, <strong>to</strong>, data, science]</td>
+                            <td>[is, related, data, science]</td>
+                            <td>to</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Step 3: Neural Network Architecture</h3>
+            <p>The network used is an <strong>Artificial Neural Network (ANN)</strong> / Fully Connected Layer.</p>
+
+            <div class="diagram-wrapper">
+                <div class="diagram-title">CBOW Architecture Diagram</div>
+                <div class="diagram-row">
+                    <div class="diagram-col">
+                        <div class="diagram-node">Input Word 1<br>(One-hot vector)</div>
+                        <div class="diagram-node">Input Word 2<br>(One-hot vector)</div>
+                        <div class="diagram-node">Input Word C-1<br>(One-hot vector)</div>
+                        <div class="diagram-node">Input Word C<br>(One-hot vector)</div>
+                    </div>
+                    <div class="diagram-arrow">➔</div>
+                    <div class="diagram-col">
+                        <div class="diagram-node highlight">
+                            <strong>Hidden Layer</strong><br>
+                            Number of Neurons = Dimension of Embedding<br>
+                            (e.g., 300 Neurons)
+                        </div>
+                    </div>
+                    <div class="diagram-arrow">➔</div>
+                    <div class="diagram-col">
+                        <div class="diagram-node success">
+                            <strong>Output Layer</strong><br>
+                            (Softmax Activation)<br>
+                            Predicts Target Word
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box box-info">
+                <span class="box-title">Where are the Embeddings?</span>
+                <p>The magic happens here: We don't actually care about the final predictions of the model once it is trained! The actual <strong>Word Embeddings</strong> are the <strong>Weights</strong> learned in the hidden layer.</p>
+                <p>If our hidden layer has 300 neurons, every word gets mathematically mapped to those 300 weights during forward and backward propagation. This becomes our 300-dimensional vector for that word!</p>
+            </div>
+        </div>
+
+        <div class="card" id="skipgram">
+            <h2><span class="timestamp">[00:48:33]</span> 8. Skip-Gram Architecture</h2>
+            <p>Skip-gram is literally the inverted architecture of CBOW.</p>
+            
+            <div class="box box-definition">
+                <span class="box-title">Mechanism</span>
+                <p>Instead of passing context words to predict the center word, Skip-gram passes the <strong>center word</strong> as the input and attempts to predict the <strong>context words</strong>.</p>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Input Data (Target Word)</th>
+                            <th>Output Labels (Context Words to Predict)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>is</td>
+                            <td>[Krish, channel, related, to]</td>
+                        </tr>
+                        <tr>
+                            <td>related</td>
+                            <td>[channel, is, to, data]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="box box-best-practice">
+                <span class="box-title">CBOW vs. Skip-gram: Which one to use?</span>
+                <ul>
+                    <li><strong>CBOW:</strong> Faster to train and has better representations for more frequent words. Good for smaller datasets.</li>
+                    <li><strong>Skip-gram:</strong> Works remarkably well with small amounts of training data, and accurately represents rare words or phrases. Generally preferred for large, massive datasets (like Google News).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card" id="gensim">
+            <h2><span class="timestamp">[00:52:03]</span> 9. Practical Implementation using Python & Gensim</h2>
+            <p>We use the <code>gensim</code> library in Python to interact with Word2Vec models. Google has provided a pre-trained model trained on over 3 Billion words from Google News datasets, generating 300-dimension vectors.</p>
+
+<pre><code><span class="code-cmt"># Install the library if you haven't</span>
+<span class="code-cmt">!pip install gensim</span>
+
+<span class="code-kw">import</span> gensim
+<span class="code-kw">from</span> gensim.models <span class="code-kw">import</span> Word2Vec, KeyedVectors
+
+<span class="code-cmt"># 1. Loading the pre-trained Google News model (~1.5 GB download)</span>
+<span class="code-cmt"># This contains 300-dimensional embeddings for millions of English words.</span>
+<span class="code-str">path</span> = <span class="code-str">'GoogleNews-vectors-negative300.bin'</span>
+model = KeyedVectors.<span class="code-fn">load_word2vec_format</span>(path, binary=<span class="code-kw">True</span>)
+
+<span class="code-cmt"># 2. View the 300-dimension vector for a specific word</span>
+vector_king = model[<span class="code-str">'king'</span>]
+<span class="code-fn">print</span>(vector_king.shape) <span class="code-cmt"># Output: (300,)</span>
+
+<span class="code-cmt"># 3. Find Contextually Similar Words (Uses Cosine Similarity under the hood)</span>
+similar_words = model.<span class="code-fn">most_similar</span>(<span class="code-str">'cricket'</span>)
+<span class="code-fn">print</span>(similar_words)
+<span class="code-cmt"># Output: [('cricketing', 0.81), ('cricketers', 0.79), ('test_cricket', 0.76)...]</span>
+
+<span class="code-cmt"># 4. Check similarity between two specific words</span>
+sim_score = model.<span class="code-fn">similarity</span>(<span class="code-str">'cricket'</span>, <span class="code-str">'sports'</span>)
+<span class="code-fn">print</span>(sim_score) <span class="code-cmt"># Output: ~0.4002</span>
+
+<span class="code-cmt"># 5. Semantic Vector Mathematics (King - Man + Woman = Queen)</span>
+<span class="code-cmt"># positive = words to add, negative = words to subtract</span>
+result = model.<span class="code-fn">most_similar</span>(positive=[<span class="code-str">'king'</span>, <span class="code-str">'woman'</span>], negative=[<span class="code-str">'man'</span>], topn=<span class="code-num">1</span>)
+<span class="code-fn">print</span>(result)
+<span class="code-cmt"># Output: [('queen', 0.7118)]</span>
+</code></pre>
+        </div>
+
+        <div class="card" id="interview">
+            <h2>10. Interview Preparation & FAQ</h2>
+            
+            <div class="box box-interview">
+                <span class="box-title">Q1: If a vocabulary has 500 words, how many dimensions will One-Hot Encoding output?</span>
+                <p><strong>Expected Answer:</strong> 500 dimensions. Every word generates a sparse array equivalent to the total vocabulary size.</p>
+            </div>
+
+            <div class="box box-interview">
+                <span class="box-title">Q2: Can Word2Vec be trained from scratch, or must it be pre-trained?</span>
+                <p><strong>Expected Answer:</strong> Both. You can utilize massive pre-trained models like Google News Word2Vec for generic language tasks, or you can train Word2Vec entirely from scratch on a domain-specific corpus (e.g., medical journals) using Gensim.</p>
+            </div>
+
+            <div class="box box-interview">
+                <span class="box-title">Q3: What type of neural network is used to train CBOW and Skip-gram?</span>
+                <p><strong>Expected Answer:</strong> A shallow Fully Connected Layer (Artificial Neural Network - ANN). It is not trained using CNNs, RNNs, or LSTMs. The embedding layer is essentially just a dense linear layer.</p>
+            </div>
+
+            <div class="box box-interview">
+                <span class="box-title">Q4: What three major problems does Word2Vec solve compared to BoW?</span>
+                <p><strong>Expected Answer:</strong> 1) It captures semantic meaning and relationships. 2) It reduces dimensionality from vocab-size to fixed sizes (e.g., 300). 3) It entirely eliminates sparse matrices by providing continuous, dense float vectors.</p>
+            </div>
+        </div>
+
+        <div class="card" id="cheatsheet">
+            <h2>11. Final Cheat Sheet & Summary</h2>
+            
+            <div class="box box-memory">
+                <span class="box-title">Quick Revision</span>
+                <ul>
+                    <li><strong>Word Embedding:</strong> Technique converting textual words into dense continuous vectors mapping semantic similarities.</li>
+                    <li><strong>Cosine Similarity:</strong> Formula evaluating angle between vectors. Closer to 1 = Synonyms. Closer to -1 = Antonyms. Closer to 0 = Unrelated.</li>
+                    <li><strong>CBOW:</strong> Predicts <em>Target word</em> from <em>Context words</em>. Fast, good for small data.</li>
+                    <li><strong>Skip-gram:</strong> Predicts <em>Context words</em> from <em>Target word</em>. Slower, highly accurate for rare words and large data.</li>
+                    <li><strong>Hidden Layer Size = Vector Dimension:</strong> The number of neurons selected for the hidden layer determines the exact size/dimension of your output word embeddings.</li>
+                    <li><strong>Gensim Library:</strong> The industry-standard Python library for implementing, training, and utilizing Word2Vec architectures.</li>
+                </ul>
+            </div>
+
+            <div class="box box-best-practice" style="text-align: center; font-size: 1.1em; font-weight: bold;">
+                End of Day 4 Notes. Mastery of Word2Vec is the fundamental stepping stone before advancing into Recurrent Neural Networks (RNNs) and modern Transformer (BERT/GPT) architectures!
+            </div>
+        </div>
+
+    </main>
+</div>
+
+</body>
+</html>
