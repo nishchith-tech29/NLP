@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 5: Masterclass Study Notes - Word2Vec & Average Word2Vec from Scratch</title>
+    <style>
+        :root {
+            --bg-page: #f8f9fa;
+            --bg-card: #ffffff;
+            --primary: #0056b3;
+            --primary-dark: #003a7a;
+            --highlight: #d35400;
+            --success: #27ae60;
+            --warning-border: #ffc107;
+            --warning-bg: #fff3cd;
+            --info-bg: #e7f1ff;
+            --info-border: #0d6efd;
+            --def-bg: #f3e8ff;
+            --def-border: #8b5cf6;
+            --gray-badge: #e9ecef;
+            --gray-text: #495057;
+            --dark-code: #1e1e1e;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-color);
+            line-height: 1.7;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Header Style */
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 45px;
+            border-radius: 12px;
+            margin-bottom: 35px;
+            box-shadow: 0 6px 20px rgba(0, 58, 122, 0.15);
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.3rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header h2 {
+            font-weight: 400;
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin: 0 0 15px 0;
+        }
+
+        .header p.subtitle {
+            font-style: italic;
+            opacity: 0.8;
+            margin: 0 0 25px 0;
+            font-size: 1.05rem;
+        }
+
+        .header .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding-top: 20px;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Table of Contents */
+        .toc-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 35px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .toc-title {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--gray-badge);
+            padding-bottom: 10px;
+        }
+
+        .toc-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 600px) {
+            .toc-list {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+        }
+
+        .toc-list li {
+            display: flex;
+            align-items: center;
+        }
+
+        .toc-list li::before {
+            content: "•";
+            color: var(--highlight);
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin-right: 10px;
+        }
+
+        .toc-list a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .toc-list a:hover {
+            color: var(--primary);
+            padding-left: 5px;
+        }
+
+        /* Section Formatting */
+        .section-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 35px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #f1f3f5;
+            padding-bottom: 12px;
+        }
+
+        .timestamp-badge {
+            background-color: var(--gray-badge);
+            color: var(--gray-text);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        h3 {
+            color: var(--primary-dark);
+            font-size: 1.4rem;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--highlight);
+            padding-left: 12px;
+        }
+
+        h4 {
+            color: var(--text-color);
+            font-size: 1.15rem;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 18px;
+            text-align: justify;
+        }
+
+        /* Boxes Layout */
+        .box {
+            padding: 22px;
+            border-radius: 8px;
+            margin: 25px 0;
+            border-left: 5px solid;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .info-box { background-color: var(--info-bg); border-left-color: var(--info-border); color: #0a58ca; }
+        .def-box { background-color: var(--def-bg); border-left-color: var(--def-border); color: #5b21b6; }
+        .warning-box { background-color: var(--warning-bg); border-left-color: var(--warning-border); color: #664d03; }
+        .example-box { background-color: #e8f5e9; border-left-color: var(--success); color: #1b5e20; }
+        .tip-box { background-color: #e0f2f1; border-left-color: #00897b; color: #004d40; }
+        
+        .box-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Diagrams Components */
+        .diagram-container {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin: 25px 0;
+        }
+
+        .pipeline-flex {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .pipeline-flex {
+                flex-direction: row;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+        }
+
+        .diagram-node {
+            background: var(--primary);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 140px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .diagram-node.highlighted { background: var(--highlight); }
+        .diagram-node.success-node { background: var(--success); }
+
+        .diagram-arrow {
+            color: var(--highlight);
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .matrix-cell {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .matrix-cell.active {
+            background: #ffe8cc;
+            border: 1px solid var(--highlight);
+        }
+
+        /* Embedding Flex Layout */
+        .embedding-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        @media (min-width: 600px) {
+            .embedding-layout {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .embedding-card {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .embedding-vector {
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            background: #333;
+            color: #50fa7b;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        /* Tables style */
+        .table-responsive {
+            overflow-x: auto;
+            margin: 25px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: left;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        th {
+            background-color: var(--primary);
+            color: white;
+            padding: 14px 16px;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: #333;
+        }
+
+        tr:nth-of-type(even) { background-color: #fdfdfd; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #f1f5f9; transition: var(--transition); }
+
+        /* Code Block Styling */
+        pre {
+            background-color: var(--dark-code);
+            color: #f8f8f2;
+            padding: 22px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+            margin: 20px 0;
+        }
+
+        code { font-family: 'Consolas', monospace; }
+
+        .kw { color: #ff79c6; font-weight: bold; } 
+        .str { color: #f1fa8c; } 
+        .cmt { color: #6272a4; font-style: italic; } 
+        .fn { color: #50fa7b; } 
+        .num { color: #bd93f9; } 
+        .op { color: #ff79c6; } 
+        .cls { color: #8be9fd; font-style: italic; } 
+
+        ul.styled-list, ol.styled-list {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        ul.styled-list li, ol.styled-list li {
+            margin-bottom: 8px;
+        }
+
+        .badge-green {
+            background-color: var(--success);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+
+        .source-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .source-link:hover { text-decoration: underline; }
+
+        .math-expr {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+            font-weight: bold;
+            color: var(--highlight);
+            padding: 0 4px;
+        }
+        
+        .math-block {
+            text-align: center;
+            margin: 1.5em 0;
+            font-size: 1.15em;
+            background: #f1f3f5;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px dashed var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header Section -->
+    <div class="header">
+        <h2>Natural Language Processing Masterclass</h2>
+        <h1>Day 5: Training Word2Vec From Scratch &amp; AvgWord2Vec Indepth Intuition</h1>
+        <p class="subtitle">A Comprehensive Academic &amp; Engineering Blueprint for Distributed Semantic Vector Transformations</p>
+        <div class="meta-grid">
+            <div class="meta-item"><strong>Instructor:</strong> Krish Naik</div>
+            <div class="meta-item"><strong>Timeline:</strong> Day 5 (NLP Series)</div>
+            <div class="meta-item"><strong>Duration:</strong> 01:01:13</div>
+            <div class="meta-item"><strong>Specialization:</strong> Deep Learning &amp; NLP Architectures</div>
+        </div>
+    </div>
+
+    <!-- Table of Contents -->
+    <div class="toc-card">
+        <div class="toc-title">Table of Contents</div>
+        <ul class="toc-list">
+            <li><a href="#pipeline">1. End-to-End NLP Pipeline &amp; Spam Classification Task</a></li>
+            <li><a href="#preprocessing">2. Comprehensive Text Preprocessing (Stemming vs Lemmatization)</a></li>
+            <li><a href="#traditional">3. Sparse Feature Matrices: Bag of Words &amp; TF-IDF</a></li>
+            <li><a href="#word2vec">4. Dense Vector Space Representations: Word2Vec Deep Dive</a></li>
+            <li><a href="#avgword2vec">5. Mathematical Synthesis: The Average Word2Vec Paradigm</a></li>
+            <li><a href="#implementation">6. Full Python Implementation &amp; Model Compilation</a></li>
+            <li><a href="#interview">7. Frequently Asked Interview Questions &amp; Answers</a></li>
+            <li><a href="#cheatsheet">8. Comprehensive Quick Revision &amp; Cheat Sheet</a></li>
+        </ul>
+    </div>
+
+    <!-- Section 1 -->
+    <div id="pipeline" class="section-card">
+        <div class="section-title">
+            <span>1. End-to-End NLP Pipeline &amp; Spam Classification Task</span>
+            <span class="timestamp-badge">[00:05:40]</span>
+        </div>
+        
+        <h3>Introduction</h3>
+        <p>In applied Natural Language Processing, text classification serves as a fundamental benchmark task. Real-world systems encounter unstructured textual payloads that lack deterministic shapes or lengths. Building an industrial-grade document classification network requires setting up an automated pipeline that can consistently convert raw character matrices into clean vector rows.</p>
+
+        <div class="def-box">
+            <div class="box-title">Definition: Text Classification Pipeline</div>
+            An end-to-end framework that takes raw text strings as input and transforms them through structured preprocessing and vector mapping blocks to output a categorical probability distribution over target labels.
+        </div>
+
+        <h3>Why it Exists &amp; The Problem It Solves</h3>
+        <p>Machine learning classifiers operate over fixed dimensions in coordinate space. However, text inputs are variable-length streams of string arrays containing punctuation, slang, and casing noise. The pipeline bridges this gap by enforcing uniform vector rules across all records before feeding them into downstream statistical model layers.</p>
+
+        <h3>How it Works: Workflow Mechanics</h3>
+        <p>The system ingests raw files (e.g., Tab-Separated Value formats containing a category label alongside the text data), cleans the text using regular expressions, standardizes tokens into base morphological forms, builds vector representations, and runs classification routines.</p>
+
+        <div class="diagram-container">
+            <h4 style="text-align: center; margin-top: 0; color: var(--primary);">End-to-End Token Vectorization &amp; Classification Flow</h4>
+            <div class="pipeline-flex">
+                <div class="diagram-node">Raw Data Input (	 separated)</div>
+                <div class="diagram-arrow">&rarr;</div>
+                <div class="diagram-node">Regex Cleaner &amp; Case Folder</div>
+                <div class="diagram-arrow">&rarr;</div>
+                <div class="diagram-node">Morphological Reduction</div>
+                <div class="diagram-arrow">&rarr;</div>
+                <div class="diagram-node highlighted">Vector Encoding Engine</div>
+                <div class="diagram-arrow">&rarr;</div>
+                <div class="diagram-node success-node">Downstream Classifier (ML/DL)</div>
+            </div>
+        </div>
+
+        <h3>Industry Use Cases</h3>
+        <ul class="styled-list">
+            <li><strong>Transactional Risk Mitigation:</strong> Monitoring incoming SMS or API requests to instantly flag and block fraudulent actors or spam distributions.</li>
+            <li><strong>Automated Ticket Routing:</strong> Evaluating incoming user support requests and using text classification to forward the issues to the correct internal team.</li>
+        </ul>
+
+        <div class="example-box">
+            <div class="box-title">Practical Example: Data Reading Layout</div>
+            <strong>Input Data Chunk:</strong><br>
+            <code>ham   Go jurong point, crazy.. Available only in bugis n great world...</code><br>
+            <code>spam  Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005.</code><br><br>
+            <strong>Python Verification Code:</strong>
+<pre><span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="cmt"># Load dataset from the UCI machine learning repository format</span>
+df = pd.<span class="fn">read_csv</span>(<span class="str">'SMSSpamCollection'</span>, sep=<span class="str">'	'</span>, names=[<span class="str">"label"</span>, <span class="str">"message"</span>])
+<span class="fn">print</span>(f<span class="str">"Total Samples Ingested: {df.shape[0]} | Target Fields: {df.shape[1]}"</span>)</pre>
+            <strong>Explanation:</strong> Setting <code>sep='	'</code> ensures explicit row mapping along structural tab fields, avoiding formatting bugs caused by naturally occurring inline commas.
+        </div>
+    </div>
+
+    <!-- Section 2 -->
+    <div id="preprocessing" class="section-card">
+        <div class="section-title">
+            <span>2. Comprehensive Text Preprocessing</span>
+            <span class="timestamp-badge">[00:12:09]</span>
+        </div>
+
+        <h3>Introduction</h3>
+        <p>Raw text data contains considerable morphological variations. Punctuation patterns, number formatting, capitalization inconsistencies, and structural filler words artificially increase vocabulary vocabulary sizes without adding real semantic value. Cleaning these elements is a critical first step for training downstream models efficiently.</p>
+
+        <h3>Why it Exists &amp; Mathematical Purpose</h3>
+        <p>If you leave text data unstandardized, terms like <code>"Go"</code>, <code>"go,"</code> and <code>"going"</code> are treated as completely distinct dimensions in a matrix. Preprocessing condenses these variations into single, shared vocabulary dimensions, reducing data sparsity and lowering computational requirements.</p>
+
+        <h3>Step-by-Step Preprocessing Protocol</h3>
+        <ol class="styled-list">
+            <li><strong>Regex Extraction Filtering:</strong> Replace everything outside alphabetic (and sometimes numerical) ranges with spaces: <code>re.sub('[^a-zA-Z]', ' ', text)</code>. Note that keeping numbers can be highly beneficial for spam detection tasks where amounts or year markers are often indicative of spam.</li>
+            <li><strong>Case Uniformity:</strong> Cast the string to absolute lowercase to map words into identical structural patterns.</li>
+            <li><strong>Tokenization Split:</strong> Fracture continuous sentences into isolated structural token strings via whitespace indices.</li>
+            <li><strong>Stopword Erasure:</strong> Filter out high-frequency structural terms (e.g., <code>"the", "is", "and"</code>) that carry minimal standalone semantic information.</li>
+            <li><strong>Morphological Reduction (Stemming or Lemmatization):</strong> Map words back to their root forms using rules or lexicon matching.</li>
+        </ol>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Stemming (e.g., PorterStemmer)</th>
+                        <th>Lemmatization (e.g., WordNetLemmatizer)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Mechanism</strong></td>
+                        <td>Chops off word ends using heuristic character-removal rules.</td>
+                        <td>Performs full morphological analysis using structural dictionary lookups.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Speed Performance</strong></td>
+                        <td>Extremely fast; demands minimal computational overhead.</td>
+                        <td>Slower; requires internal part-of-speech context calculations.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Output Characteristics</strong></td>
+                        <td>Often produces invalid non-word substrings (e.g., <code>"trouble" &rarr; "troubl"</code>).</td>
+                        <td>Guarantees valid root words that exist within standard language dictionaries.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Optimal Deployment</strong></td>
+                        <td>High-throughput string parsing where semantic validity matters less than raw speed.</td>
+                        <td>Context-heavy setups like conversational chatbots, Q&amp;A engines, and dense semantic matching layers.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="warning-box">
+            <div class="box-title">Warning: Avoid Mixing Incompatible Stemming &amp; Pretrained Vectors</div>
+            Do not pass stemmed outputs (like <code>"troubl"</code> or <code>"fanta"</code>) into pretrained vector models like the Google News 300 dataset. Pretrained vector collections are built using complete, valid dictionary words. Feeding chopped words into these models will cause widespread Out-of-Vocabulary (OOV) lookup errors, rendering the embedding layers ineffective.
+        </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div id="traditional" class="section-card">
+        <div class="section-title">
+            <span>3. Sparse Feature Matrices: Bag of Words &amp; TF-IDF</span>
+            <span class="timestamp-badge">[00:21:00]</span>
+        </div>
+
+        <h3>Introduction</h3>
+        <p>Traditional frequency-based approaches build vector vocabularies from token counts across a text corpus. These models treat documents as unordered collections of individual words, entirely discarding word sequence and context rules.</p>
+
+        <h3>How it Works: Mathematical Models</h3>
+        <ul class="styled-list">
+            <li><strong>Bag of Words (CountVectorizer):</strong> Counts how often each token appears in a document. When initialized with <code>binary=True</code>, it acts as a boolean indicator ($\{0,1\}$) of a word's presence or absence. This approach reduces model sensitivity to repetitive keyword patterns often used in spam messages.</li>
+            <li><strong>TF-IDF Vectorization:</strong> Scales token counts by how frequently they appear across all documents in the corpus, down-weighting universally common words:
+                <div class="math-block">
+                    <span class="math-expr">TF-IDF(t, d, D) = TF(t, d) &times; \log\left(rac{|D|}{1 + |\{d \in D : t \in d\}|}ight)</span>
+                </div>
+            </li>
+        </ul>
+
+        <h3>Hyperparameter Selection Strategies</h3>
+        <p>Using <code>max_features=2500</code> instructs the pipeline to keep only the top 2500 most frequent tokens across the entire corpus. This constraint limits matrix size, filters out rare terms that add noise, and keeps computational requirements manageable during classifier training.</p>
+
+        <div class="warning-box">
+            <div class="box-title">Critical System Failure: Data Leakage via Vector Fits</div>
+            <strong>Common Architecture Bug:</strong> Running <code>fit_transform()</code> on your entire data pool before splitting into train and test sets.<br>
+            <strong>Consequence:</strong> The vectorizer builds its vocabulary index using text distributions from your evaluation split. This leaks test-set patterns into the training pipeline, causing over-optimistic performance metrics that will fail to match real-world production performance.
+        </div>
+    </div>
+
+    <!-- Section 4 -->
+    <div id="word2vec" class="section-card">
+        <div class="section-title">
+            <span>4. Dense Vector Space Representations: Word2Vec Deep Dive</span>
+            <span class="timestamp-badge">[00:33:16]</span>
+        </div>
+
+        <h3>Introduction</h3>
+        <p>Frequency-based approaches create high-dimensional, sparse matrices that treat every word as mathematically independent. This design means the vector representations for related words like "king" and "queen" have a dot product of zero, failing to capture any semantic connection. Word2Vec addresses this limitation by mapping tokens into dense, continuous low-dimensional vector spaces.</p>
+
+        <div class="def-box">
+            <div class="box-title">Definition: Word2Vec Embedding</div>
+            A distributed representation framework where individual words are mapped to coordinates in a continuous vector space <span class="math-expr">\mathbb{R}^d</span> (where <span class="math-expr">100 \le d \le 300</span>). Proximity within this coordinate space directly reflects structural and semantic similarity.
+        </div>
+
+        <h3>Why it Exists &amp; Core Structural Breakthroughs</h3>
+        <p>Word2Vec models are trained using a shallow, two-layer neural architecture that learns dense representations by predicting word context patterns. This setup preserves contextual relationships, allowing the model to capture semantic analogies like:</p>
+        <div class="math-block">
+            <span class="math-expr">ec{v}_{	ext{king}} - ec{v}_{	ext{man}} + ec{v}_{	ext{woman}} pprox ec{v}_{	ext{queen}}</span>
+        </div>
+
+        <h3>Architectural Variants: CBOW vs Skip-Gram</h3>
+        <p>The Word2Vec framework provides two distinct training methods depending on your data distribution objectives:</p>
+        
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Evaluation Parameter</th>
+                        <th>Continuous Bag of Words (CBOW)</th>
+                        <th>Skip-Gram Architecture</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Algorithmic Target</strong></td>
+                        <td>Predicts a missing center word based on an aggregate pool of surrounding context words.</td>
+                        <td>Takes a single center word and predicts the distribution of its surrounding context words.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Training Efficiency</strong></td>
+                        <td>Faster convergence times; highly optimized for common vocabulary terms.</td>
+                        <td>Slower runtime execution; requires more gradient steps per context window block.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Data Scale Performance</strong></td>
+                        <td>Works well with large, text-heavy training collections.</td>
+                        <td>Excels with smaller data scales; uncovers clean representations for rare tokens.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Hyperparameter Configuration Blueprint</h3>
+        <ul class="styled-list">
+            <li><strong>vector_size (Default: 100):</strong> The total number of coordinate dimensions allocated to each word vector. Higher counts increase the semantic capacity of your model but require larger training datasets to avoid overfitting.</li>
+            <li><strong>window (Default: 5):</strong> The maximum token distance between the target word and context words during optimization steps. Higher window sizes capture broader topical relationships, while smaller windows focus on immediate syntax.</li>
+            <li><strong>min_count (Default: 5):</strong> A frequency floor that drops rare words appearing fewer times than the limit, filtering out uninformative noise.</li>
+        </ul>
+    </div>
+
+    <!-- Section 5 -->
+    <div id="avgword2vec" class="section-card">
+        <div class="section-title">
+            <span>5. Mathematical Synthesis: The Average Word2Vec Paradigm</span>
+            <span class="timestamp-badge">[00:37:52]</span>
+        </div>
+
+        <h3>Introduction</h3>
+        <p>Word2Vec excels at generating fixed-size dense vectors for single words. However, text classification tasks require vectorizing complete sentences or documents, which naturally contain variable numbers of tokens. Average Word2Vec addresses this requirement by aggregating word-level vectors into a consistent document-level representation.</p>
+
+        <h3>Mathematical Formula</h3>
+        <p>The transformation computes a document centroid by calculating the element-wise mathematical mean across all recognized token vector embeddings within that specific sequence block:</p>
+        <div class="math-block">
+            <span class="math-expr">ec{V}_{	ext{document}} = rac{1}{N} \sum_{i=1}^{N} ec{v}_{	ext{token}_i}</span>
+        </div>
+        <p>Where <span class="math-expr">N</span> represents the total count of words in the sentence that exist within the model's trained vocabulary index, and <span class="math-expr">ec{v}_{	ext{token}_i}</span> represents the isolated <span class="math-expr">d</span>-dimensional coordinate vector for that specific word.</p>
+
+        <h3>How it Works: Dimensional Transformation</h3>
+        <p>Consider a sentence containing 4 tokens: <code>["please", "subscribe", "krish", "channel"]</code>. If our Word2Vec model uses 100 dimensions, each word corresponds to a separate $100$-dimensional vector row. Instead of letting the feature space grow with sentence length ($4 	imes 100 = 400$ dimensions), Average Word2Vec averages the rows component-by-component. This returns a single vector that matches our original $100$-dimensional coordinate space, ensuring uniform input shapes for downstream classifiers regardless of text length.</p>
+
+        <div class="diagram-container">
+            <h4 style="text-align: center; margin-top: 0; color: var(--primary);">Matrix Condensation: Average Word2Vec Architecture</h4>
+            <div class="embedding-layout">
+                <div class="embedding-card">
+                    <strong>Token Row 1: "please"</strong>
+                    <div class="embedding-vector">[0.12, -0.45, 0.78, ..., 0.04]</div>
+                </div>
+                <div class="diagram-arrow" style="text-align: center; font-size: 1.2rem;">+</div>
+                <div class="embedding-card">
+                    <strong>Token Row 2: "subscribe"</strong>
+                    <div class="embedding-vector">[0.34, -0.12, 0.22, ..., 0.91]</div>
+                </div>
+                <div class="diagram-arrow" style="text-align: center; font-size: 1.2rem;">&rarr; Element Mean / N &rarr;</div>
+                <div class="embedding-card" style="background-color: #e8f5e9; border-color: var(--success);">
+                    <strong>Document Feature Vector</strong>
+                    <div class="embedding-vector" style="background-color: #1b5e20;">[0.23, -0.28, 0.50, ..., 0.47]</div>
+                </div>
+            </div>
+        </div>
+
+        <h3>Advantages &amp; Limitations</h3>
+        <p><strong>Advantages:</strong> Normalizes variable text sizes down to fixed classifier input dimensions. It retains core semantic concepts across the entire document while filtering out localized phrase variance.</p>
+        <p><strong>Limitations:</strong> It ignores word order and syntactic sequence flow. Because vector addition is commutative, the sentences "Not bad, actual spam" and "Actual bad, not spam" produce identical pooled vector representations, discarding the nuance of word position.</p>
+    </div>
+
+    <!-- Section 6 -->
+    <div id="implementation" class="section-card">
+        <div class="section-title">
+            <span>6. Full Python Implementation &amp; Model Compilation</span>
+            <span class="timestamp-badge">[00:43:32]</span>
+        </div>
+
+        <h3>Production Script Framework</h3>
+        <p>The code block below provides a complete, end-to-end Python pipeline. It handles text normalization, trains a custom Word2Vec model from scratch, extracts sentence-level averages, and runs classification evaluations using Random Forest layers.</p>
+
+<pre><span class="kw">import</span> re
+<span class="kw">import</span> nltk
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> nltk.corpus <span class="kw">import</span> stopwords
+<span class="kw">from</span> nltk.stem <span class="kw">import</span> WordNetLemmatizer
+<span class="kw">from</span> nltk.tokenize <span class="kw">import</span> sent_tokenize
+<span class="kw">from</span> gensim.utils <span class="kw">import</span> simple_process
+<span class="kw">from</span> gensim.models <span class="kw">import</span> Word2Vec
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> accuracy_score, classification_report
+
+<span class="cmt"># 1. Download necessary NLTK resource components</span>
+nltk.<span class="fn">download</span>(<span class="str">'stopwords'</span>, quiet=<span class="kw">True</span>)
+nltk.<span class="fn">download</span>(<span class="str">'punkt'</span>, quiet=<span class="kw">True</span>)
+nltk.<span class="fn">download</span>(<span class="str">'wordnet'</span>, quiet=<span class="kw">True</span>)
+
+<span class="cmt"># 2. Ingest Tabular Data Payload</span>
+<span class="cmt"># Assuming text is stored locally as 'SMSSpamCollection'</span>
+messages = pd.<span class="fn">read_csv</span>(<span class="str">'SMSSpamCollection'</span>, sep=<span class="str">'	'</span>, names=[<span class="str">"label"</span>, <span class="str">"message"</span>])
+
+<span class="cmt"># 3. Data Cleaning via WordNet Lemmatization</span>
+lemmatizer = <span class="fn">WordNetLemmatizer</span>()
+clean_corpus = []
+
+<span class="kw">for</span> idx <span class="kw">in</span> <span class="fn">range</span>(<span class="num">0</span>, <span class="fn">len</span>(messages)):
+    <span class="cmt"># Retain alpha patterns and fold characters to lowercase</span>
+    cleaned_text = re.<span class="fn">sub</span>(<span class="str">'[^a-zA-Z]'</span>, <span class="str">' '</span>, messages[<span class="str">'message'</span>][idx]).<span class="fn">lower</span>().<span class="fn">split</span>()
+    processed_tokens = [
+        lemmatizer.<span class="fn">lemmatize</span>(word) 
+        <span class="kw">for</span> word <span class="kw">in</span> cleaned_text 
+        <span class="kw">if</span> word <span class="kw">not</span> <span class="kw">in</span> stopwords.<span class="fn">words</span>(<span class="str">'english'</span>)
+    ]
+    clean_corpus.<span class="fn">append</span>(<span class="str">' '</span>.<span class="fn">join</span>(processed_tokens))
+
+<span class="cmt"># 4. Token Processing for Custom Word2Vec Training</span>
+tokenized_sentences = []
+<span class="kw">for</span> document <span class="kw">in</span> clean_corpus:
+    sentences = <span class="fn">sent_tokenize</span>(document)
+    <span class="kw">for</span> sentence <span class="kw">in</span> sentences:
+        <span class="cmt"># simple_process automatically lowers and yields arrays of tokens</span>
+        tokenized_sentences.<span class="fn">append</span>(<span class="fn">simple_process</span>(sentence))
+
+<span class="cmt"># 5. Compile Custom Word2Vec Embeddings From Scratch</span>
+w2v_model = <span class="fn">Word2Vec</span>(
+    sentences=tokenized_sentences, 
+    vector_size=<span class="num">100</span>, 
+    window=<span class="num">5</span>, 
+    min_count=<span class="num">2</span>, 
+    epochs=<span class="num">5</span>
+)
+
+<span class="cmt"># 6. Build the Sentence-Level Vector Matrix Pipeline</span>
+<span class="kw">def</span> <span class="fn">vector_averager</span>(tokens, embedding_model):
+    <span class="cmt"># Filter out words that are missing from the trained vocabulary index</span>
+    valid_vectors = [
+        embedding_model.wv[word] 
+        <span class="kw">for</span> word <span class="kw">in</span> tokens 
+        <span class="kw">if</span> word <span class="kw">in</span> embedding_model.wv.index_to_key
+    ]
+    <span class="kw">if</span> <span class="fn">len</span>(valid_vectors) == <span class="num">0</span>:
+        <span class="kw">return</span> np.<span class="fn">zeros</span>(embedding_model.vector_size)
+    <span class="kw">return</span> np.<span class="fn">mean</span>(valid_vectors, axis=<span class="num">0</span>)
+
+<span class="cmt"># Transform all records into dense, continuous rows</span>
+X_dense_vectors = np.<span class="fn">array</span>([<span class="fn">vector_averager</span>(tokens, w2v_model) <span class="kw">for</span> tokens <span class="kw">in</span> tokenized_sentences])
+y_labels = pd.<span class="fn">get_dummies</span>(messages[<span class="str">'label'</span>], drop_first=<span class="kw">True</span>).values.<span class="fn">ravel</span>()
+
+<span class="cmt"># 7. Model Evaluation Pipeline Split</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X_dense_vectors, y_labels, test_size=<span class="num">0.20</span>, random_state=<span class="num">42</span>
+)
+
+<span class="cmt"># Initialize and train our downstream ensemble model</span>
+classifier = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="num">100</span>, random_state=<span class="num">42</span>)
+classifier.<span class="fn">fit</span>(X_train, y_train)
+
+<span class="cmt"># 8. Report Performance Metrics</span>
+y_predictions = classifier.<span class="fn">predict</span>(X_test)
+<span class="fn">print</span>(f<span class="str">"Evaluation Accuracy: {accuracy_score(y_test, y_predictions) * 100:.2f}%"</span>)
+<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_predictions))</pre>
+
+        <div class="box info-box">
+            <div class="box-title">Practical Coding Note</div>
+            The <code>vector_averager</code> logic provides an essential production fallback step. If an incoming message consists entirely of out-of-vocabulary (OOV) tokens, the function catches the empty list and returns a clean vector of zeros. This defensive design prevents application crashes during live real-time inference.
+        </div>
+    </div>
+
+    <!-- Section 7 -->
+    <div id="interview" class="section-card">
+        <div class="section-title">
+            <span>7. Frequently Asked Interview Questions &amp; Answers</span>
+            <span class="timestamp-badge">[Interview Focus]</span>
+        </div>
+
+        <h3>Core Technical Deep Dive</h3>
+        
+        <div class="tip-box box">
+            <strong>Question 1: What causes Word2Vec models to outperform traditional TF-IDF setups?</strong><br>
+            <strong>Expected Answer:</strong> TF-IDF creates sparse, high-dimensional arrays where each unique word forms an independent axis, ignoring any semantic links between words. Word2Vec maps words into dense, lower-dimensional continuous spaces where spatial proximity directly reflects contextual similarity, capturing nuanced semantic analogies.
+        </div>
+
+        <div class="tip-box box">
+            <strong>Question 2: Why do we use binary=True inside CountVectorizer initialization runs?</strong><br>
+            <strong>Expected Answer:</strong> Setting <code>binary=True</code> switches the feature matrix from raw term counts to simple boolean indicators ($\{0,1\}$) of a word's presence or absence. This prevents repetitive keyword patterns—a common strategy in spam payloads—from over-influencing the model's classification decisions.
+        </div>
+
+        <div class="tip-box box">
+            <strong>Question 3: What is the main structural weakness of Average Word2Vec, and how do you fix it?</strong><br>
+            <strong>Expected Answer:</strong> Average Word2Vec calculates a simple element-wise arithmetic mean, which completely discards word order and grammatical structure. Because vector addition is commutative, sentences like "Not bad, actual spam" and "Actual bad, not spam" yield identical document vectors. To preserve sequence structure, pipelines should upgrade to sequential architectures like recurrent networks (LSTM/GRU) or attention-driven transformers.
+        </div>
+    </div>
+
+    <!-- Section 8 -->
+    <div id="cheatsheet" class="section-card">
+        <div class="section-title">
+            <span>8. Comprehensive Quick Revision &amp; Cheat Sheet</span>
+            <span class="timestamp-badge">[Summary Sheet]</span>
+        </div>
+
+        <h3>Core Math Transformations</h3>
+        <ul class="styled-list">
+            <li><strong>TF-IDF Weights:</strong> $	ext{TF-IDF}(t, d, D) = 	ext{TF}(t, d) 	imes \log\left(rac{|D|}{1 + |\{d \in D : t \in d\}|}ight)$</li>
+            <li><strong>Document Averaging Layer:</strong> $ec{V}_{D} = rac{1}{|D \cap \mathcal{V}|} \sum_{w \in D \cap \mathcal{V}} ec{v}_w$</li>
+        </ul>
+
+        <h3>Essential System Commands</h3>
+<pre><span class="cmt"># Check spatial semantic neighbors across custom trained arrays</span>
+w2v_model.wv.similar_by_word(<span class="str">'free'</span>)
+
+<span class="cmt"># Pull full unique string arrays from trained models</span>
+vocabulary_keys = w2v_model.wv.index_to_key</pre>
+
+        <div class="box warning-box">
+            <div class="box-title">Assigned Capstone Project</div>
+            <strong>Task:</strong> Verify pipeline performance at scale. Import the <code>IMDB 50K Movie Reviews Dataset</code> via your Google Colab instance. Apply the <code>WordNetLemmatizer</code> workflow, train a fresh Word2Vec model from scratch, process the text through the <code>vector_averager</code> transformation layer, and evaluate classification metrics using a Random Forest model.
+        </div>
+
+        <div class="def-box" style="background-color: #f8f9fa; color: var(--text-color); border-left-color: var(--primary);">
+            <div class="box-title" style="color: var(--primary);">Academic Roadmap for Next Topics</div>
+            With distributed dense vectors established, the training pipeline will expand next into <strong>Stanford GloVe Embeddings</strong> (Global Vectors for Word Representation). From there, the curriculum shifts into deep sequence modeling, covering <strong>Recurrent Neural Networks (RNNs)</strong> and <strong>Long Short-Term Memory (LSTM)</strong> blocks, before concluding with advanced self-attention transformer frameworks like <strong>BERT</strong> via HuggingFace API environments.
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
