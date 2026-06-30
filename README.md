@@ -1,12 +1,11 @@
 # 🧠 NLP Repository
 
 ## 📌 Overview
-This repository documents my Natural Language Processing (NLP) learning journey along with hands-on coding practice and real-world projects. It includes notes, Jupyter notebooks, and future NLP-based projects.
+This repository documents my Natural Language Processing (NLP) learning journey along with hands-on coding practice and real-world projects. It includes notes, Jupyter notebooks.
 
 The goal of this repo is to:
 - Learn NLP from basics to advanced
 - Implement concepts with code
-- Build real-world NLP projects
 - Maintain structured documentation for revision and portfolio use
 
 ---
@@ -23,11 +22,6 @@ NLP/
 ├── notebooks/           # Jupyter notebooks for practice
 │   ├── preprocessing.ipynb
 │   ├── bag_of_words.ipynb
-│
-├── projects/            # NLP projects (main focus area 🚀)
-│   ├── sentiment_analysis/
-│   ├── spam_classifier/
-│   └── chatbots/
 │
 ├── datasets/            # Sample datasets used in notebooks/projects
 │
@@ -65,31 +59,6 @@ NLP/
 
 ---
 
-## 🚀 Projects (Upcoming & Ongoing)
-
-This repository will include real-world NLP projects such as:
-
-### 🔹 Sentiment Analysis
-
-* Classify reviews or tweets as positive/negative
-* Uses: NLTK / Scikit-learn
-
-### 🔹 Spam Message Classifier
-
-* Detect spam vs ham messages
-* Uses: TF-IDF + ML models
-
-### 🔹 Chatbot (Rule-based / ML-based)
-
-* Simple conversational bot
-* Uses: NLP preprocessing + similarity matching
-
-### 🔹 Text Summarizer (Future)
-
-* Automatic summarization of articles
-* Advanced NLP techniques
-
----
 
 ## 🚀 How to Use This Repo
 
@@ -115,10 +84,7 @@ By working through this repo, I aim to:
 ## 📈 Future Improvements
 
 * Add Deep Learning NLP models (RNN, LSTM, Transformers)
-* Deploy NLP projects using Flask / Django
 * Add GitHub Pages for notes
-* Improve project documentation with results & screenshots
-
 ---
 
 ## 🤝 Contributions
